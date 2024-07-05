@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 std::string trim(const std::string& str) {
     size_t first = str.find_first_not_of(" \t");
@@ -15,8 +16,8 @@ void printOptions() {
     std::cout << "1: Go to a website" << std::endl;
     std::cout << "2: Go to previous website in history" << std::endl;
     std::cout << "3: Go to next website in history" << std::endl;
-    std::cout << "4: Create a new tab (not functional)" << std::endl;
-    std::cout << "5: Switch tabs (not functional)" << std::endl;
+    std::cout << "4: Create a new tab" << std::endl;
+    std::cout << "5: Switch tabs" << std::endl;
     std::cout << "6: Go to current website" << std::endl;
     std::cout << "-";
 }
@@ -28,78 +29,94 @@ void clear() {
 void render(std::string filename);
 
 int main() {
-    std::string history[50];
-    int historySize = 50;
-    int historyPos = 0;
+    const int maxTabs = 10;
+    const int initialHistorySize = 50;
+    std::vector<std::vector<std::string>> history(maxTabs, std::vector<std::string>(initialHistorySize));
+    std::vector<int> historyPos(maxTabs, 0);
+    int tab = 0;
+    int totalTabs = 1;
 
     std::string filename;
     int option;
 
     while (true) {
-
         clear();
-
         printOptions();
         std::cin >> option;
-
         clear();
 
         switch (option) {
-        case 1:
+        case 1: {
             std::cout << "Enter a website:" << std::endl;
             std::cin >> filename;
             clear();
 
-            if (historyPos >= historySize) {
-                historySize *= 2;
-                history->resize(historySize * sizeof(std::string));
+            if (historyPos[tab] >= history[tab].size()) {
+                history[tab].resize(history[tab].size() * 2);
             }
-            
-            history[historyPos] = filename;
-            historyPos++;
 
-            for (int i = historyPos; i < historySize; i++) {
-                history[i] = "";
+            history[tab][historyPos[tab]++] = filename;
+            for (int i = historyPos[tab]; i < history[tab].size(); ++i) {
+                history[tab][i].clear();
             }
 
             render(filename);
             break;
-        case 2:
-            if (historyPos > 1) {
+        }
+        case 2: {
+            if (historyPos[tab] > 1 && !history[tab][historyPos[tab] - 2].empty()) {
                 clear();
-
-                filename = history[historyPos - 2];
-                historyPos--;
-
-                render(filename);
-            }
-            break;
-        case 3:
-            if (history[historyPos] != "") {
-                clear();
-
-                filename = history[historyPos];
-                historyPos++;
-
-                render(filename);
-            }
-            break;
-        case 4:
-            break;
-        case 5:
-            break;
-        case 6:
-            if (historyPos > 0) {
-                clear();
-
-                filename = history[historyPos - 1];
-
+                filename = history[tab][historyPos[tab] - 2];
+                historyPos[tab]--;
                 render(filename);
             }
             break;
         }
-
-        
+        case 3: {
+            if (!history[tab][historyPos[tab]].empty()) {
+                clear();
+                filename = history[tab][historyPos[tab]];
+                historyPos[tab]++;
+                render(filename);
+            }
+            break;
+        }
+        case 4: {
+            if (totalTabs < maxTabs) {
+                totalTabs++;
+                tab = totalTabs - 1;
+            }
+            break;
+        }
+        case 5: {
+            for (int i = 0; i < totalTabs; ++i) {
+                if (historyPos[i] > 0) {
+                    std::cout << i << ": " << history[i][historyPos[i] - 1] << std::endl;
+                }
+                else {
+                    std::cout << i << ": New Tab" << std::endl;
+                }
+            }
+            std::cin >> tab;
+            break;
+        }
+        case 6: {
+            if (historyPos[tab] > 0) {
+                clear();
+                filename = history[tab][historyPos[tab] - 1];
+                render(filename);
+            }
+            break;
+        }
+        default: {
+            if (historyPos[tab] > 0) {
+                clear();
+                filename = history[tab][historyPos[tab] - 1];
+                render(filename);
+            }
+            break;
+        }
+        }
     }
     return 0;
 }
